@@ -1,0 +1,40 @@
+{
+  "web_addrs": {
+    "ftse350": "https://api.londonstockexchange.com/api/v1/components/refresh",
+    "holidays": "http://www.calendar-uk.co.uk/holidays/{}/"
+  },
+  "files": {
+    "store_path": "C:/Users/robert.franklin/Desktop/local_projects/random/stock_trading/stock_price_ingest/data/"
+  },
+  "model":{
+    "batch_size": 512
+  },
+  "db": {
+    "name": "prices",
+    "filename": "prices.db"
+  },
+  "sequence":{
+    "period": 30,
+    "target_period": 5,
+    "normalise": true,
+    "key": "close"
+  },
+  "web_scrape": {
+    "mode": "update",
+    "max_days": 140
+  },
+  "db_update": {
+    "prices": "full",
+    "signals": "full"
+  },
+  "public_holidays": [
+    "New Yea's Day",
+    "Good Friday",
+    "Easter Monday",
+    "May Day Bank Holiday",
+    "Spring Bank Holiday",
+    "Summer Bank Holiday",
+    "Christmas day",
+    "Boxing Day"
+  ]
+}
