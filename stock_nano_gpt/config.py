@@ -5,7 +5,7 @@ import re
 
 CONFIG = []
 
-with open("./config.json", "r") as f:
+with open("C:/Users/robert.franklin/Desktop/local_projects/random/stock-gpt/config.json", "r") as f:
     CONFIG = json.loads(f.read())
 
 # Overwrite with local config if present
@@ -25,21 +25,23 @@ for k, v in os.environ.items():
         CONFIG[k] = v
 
 # Assign to variables
-# Scraping
-FTSE350_ADDR = CONFIG.get("web_scrape", {}).get("ftse350", "https://api.londonstockexchange.com/api/v1/components/refresh")
 # Files
 STORE_PATH = CONFIG.get("files", {}).get("store_path", "./data")
 # Database
 DB_PATH = os.path.join(STORE_PATH, CONFIG.get("db", {}).get("filename", "prices.db"))
-DB_NAME = CONFIG.get("db", {}).get("name", "prices")
-DB_UPDATE_PRICES = CONFIG.get("db_update", {}).get("prices", "full")
-DB_UPDATE_SIGNALS = CONFIG.get("db_update", {}).get("signals", "full")
-# Misc
-PUBLIC_HOLS = CONFIG.get("public_holidays", [])
 # Sequence
 PERIOD = CONFIG.get("sequence", {}).get("period", 30)
 TARGET_PERIOD = CONFIG.get("sequence", {}).get("target_period", 1)
-NORM_DATA = CONFIG.get("sequence", {}).get("normalise", True)
+NORM_SIZE = CONFIG.get("sequence", {}).get("norm_period", 30)
 KEY = CONFIG.get("sequence", {}).get("key", "close")
+SEQ_TYPE = CONFIG.get("sequence", {}).get("seq_type", "single_long")
+TRANS_TYPE = CONFIG.get("sequence", {}).get("trans_type", None)
+VAL_LIMIT = CONFIG.get("sequence", {}).get("value_limit", None)
 # Model
 BATCH_SIZE = CONFIG.get("model", {}).get("batch_size", 32)
+MAX_ITERS = CONFIG.get("model", {}).get("max_iters", 10000)
+LEARNING_RATE = CONFIG.get("model", {}).get("learning_rate", 6e-4)
+DROPOUT = CONFIG.get("model", {}).get("dropout", 0.2)
+N_LAYER = CONFIG.get("model", {}).get("n_layer", 12)
+N_HEAD = CONFIG.get("model", {}).get("n_head", 16)
+N_EMBD = CONFIG.get("model", {}).get("n_embd", 256)

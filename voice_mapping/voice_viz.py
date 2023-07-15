@@ -17,7 +17,7 @@ from itertools import cycle
 
 FR = 128
 # FP = 'test.m4a'
-FP = 'test_fx.mp3'
+FP = 'bhavik.mp3'
 BINS = 512
 VID_NAME = f'{date.today()}.mov'
 SPEED = 5

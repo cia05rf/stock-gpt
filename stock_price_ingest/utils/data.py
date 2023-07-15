@@ -45,7 +45,7 @@ def np_count_values(np_array):
 
 def norm_np(arr, axis: int = 0, holdout: int = 5):
     v = arr[:, :-holdout]
-    min_ = np.expand_dims(np.min(v, axis=axis), axis=axis)
-    max_ = np.expand_dims(np.max(v, axis=axis), axis=axis)
+    min_ = np.expand_dims(np.nanmin(v[v != -np.inf], axis=axis), axis=axis)
+    max_ = np.expand_dims(np.nanmax(v[v != np.inf], axis=axis), axis=axis)
     arr = ((arr - min_) / (max_ - min_))
     return arr

@@ -5,7 +5,7 @@ import re
 
 CONFIG = []
 
-with open("./config.json", "r") as f:
+with open("C:/Users/robert.franklin/Desktop/local_projects/random/stock-gpt/config.json", "r") as f:
     CONFIG = json.loads(f.read())
 
 # Overwrite with local config if present
@@ -43,5 +43,6 @@ PUBLIC_HOLS = CONFIG.get("public_holidays", [])
 # Sequence
 PERIOD = CONFIG.get("sequence", {}).get("period", 30)
 TARGET_PERIOD = CONFIG.get("sequence", {}).get("target_period", 1)
-NORM_DATA = CONFIG.get("sequence", {}).get("normalise", True)
 KEY = CONFIG.get("sequence", {}).get("key", "close")
+SEQ_TYPE = CONFIG.get("sequence", {}).get("seq_type", "single_long")
+VAL_DAYS = CONFIG.get("model", {}).get("val_days", 100)

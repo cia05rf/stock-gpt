@@ -51,7 +51,20 @@ def wiki_constituents(
 if __name__ == "__main__":
     # Variables
     st_date = datetime(1980, 1, 1)
-    en_date = datetime.now()
+    # Market closes
+    d = datetime.strptime(str(datetime.today())[:10], "%Y-%m-%d")
+    market_close = {
+        "FTSE350": datetime(d.year, d.month, d.day, 16, 30),
+        "NASDAQ": datetime(d.year, d.month, d.day, 21, 0),
+        "S&P500": datetime(d.year, d.month, d.day, 21, 0),
+        "CAC40": datetime(d.year, d.month, d.day, 16, 30),
+        "DAX": datetime(d.year, d.month, d.day, 16, 30),
+    }
+    en_date = {
+        k:(v + timedelta(days=1)).date() if v < datetime.now()
+        else datetime.now().date()
+        for k, v in market_close.items()
+    }
 
     content_df = pd.DataFrame()
 
@@ -112,10 +125,12 @@ if __name__ == "__main__":
     # Ticker
     # Format data
     tickers = content_df[["ticker", "company", "market"]]
+    # Remove any duplicate tickers (happend for NASDAQ AND S&P500)
+    tickers = tickers.drop_duplicates(subset=["ticker", "market"])
     # Add last seen
     tickers["last_seen_date"] = date.today()
     # Upsert
-    tickers = TickerCl().upsert_df(tickers, id_col=["ticker"])
+    tickers = TickerCl().upsert_df(tickers, id_col=["ticker", "market"])
 
     # Get all tickers from db
     ticker_dates = pd.read_sql("""
@@ -150,13 +165,13 @@ if __name__ == "__main__":
     date_groups = ticker_dates.groupby(["last_date", "market"], as_index=False)
 
     # Work with date groups
-    for ld, g in tqdm(date_groups, total=len(date_groups), desc="Date groups"):
-        print(f"Processing {g.shape[0]} tickers at {ld}")
-        ticker_list = g.ticker.tolist()
+    for (ld, m), g in tqdm(date_groups, total=len(date_groups), desc="Date groups"):
+        print(f"Processing {g.shape[0]} tickers for {m} ({ld.date()} < date < {en_date[m]})")
+        ticker_list = g.ticker.unique().tolist()
         data = yf.download(
             ticker_list,
-            start=ld[0],
-            end=en_date,
+            start=ld.date(),
+            end=en_date[m],
             interval='1d',
             group_by='Ticker',
             progress=False,
@@ -165,19 +180,38 @@ if __name__ == "__main__":
             threads=True,
             proxy=None
         )
-        # Reformat df
-
-        def _meld_df(df, t):
-            df["ticker"] = t
-            df = df.loc[~df["Close"].isnull()] \
+        if len(ticker_list) == 1:
+            data["ticker"] = ticker_list[0]
+            data = data.loc[~data["Close"].isnull()] \
                 .drop_duplicates()
-            return df
-        data = pd.concat([_meld_df(data[t], t)
-                         for t in data.columns.get_level_values(0).unique()])
+        else:
+            # Reformat df
+
+            def _meld_df(df, t):
+                df["ticker"] = t
+                df = df.loc[~df["Close"].isnull()] \
+                    .drop_duplicates()
+                return df
+            data = pd.concat([_meld_df(data[t], t)
+                            for t in data.columns.get_level_values(0).unique()])
         # Rename cols
         data = data.reset_index()
         cols_map = {k: to_snake_case(k) for k in data.columns}
         data = data.rename(columns=cols_map)
+        # Find outliers - where proportion compared ot previous is too big or small
+        # Must be a one off move (otherwise could be a share split)
+        data_groups = data.groupby("ticker")
+        for _, dg in data_groups:
+            dg["close_prop"] = dg.close / dg.close.shift(1)
+            dg_outl = ((dg.close_prop > 10) | (dg.close_prop < 0.1)) \
+                & ((dg.close_prop.shift(-1) > 10) | (dg.close_prop.shift(-1) < 0.1))
+            # Skip if none found
+            if dg_outl.sum() == 0: 
+                continue
+            # Amend outlier columns
+            for col in ["high", "low", "open", "close"]:
+                dg.loc[dg_outl, col] = dg.loc[dg_outl, col] / dg.loc[dg_outl, "close_prop"]
+            data.loc[dg.index] = dg
         # Calc fields
         data["change"] = data["close"] - data["open"]
         # Join on id

@@ -182,6 +182,12 @@ class Fund:
     @property
     def fund_value(self):
         return self.available
+    
+    @property
+    def cur_holdings_df(self):
+        return pd.DataFrame([
+            {"ticker": k} | v for k, v in self.cur_holdings.items()
+            ])
 
     def summary(self, show_holdings: bool = False):
         """Print a summary of the fund"""
@@ -192,7 +198,7 @@ class Fund:
         print('fund_value:{:,}'.format(self.fund_value))
         if self.ledger is not None:
             print('ledger:')
-            print("trade_count", self.ledger[["trade_id"]].count())
+            print("trade_count:", self.ledger.shape[0])
             print(self.ledger[["trade_vol", "trade_value",
                   "stamp_duty", "trade_cost", "ledger_value"]].sum())
         if show_holdings:
@@ -267,11 +273,13 @@ class Fund:
                 pre_avcost=self.cur_holdings.get(ticker, {}).get('cur_price', 0.0)
             )
         except ValueError as e:
-            print('BUY: this transaction will be cancelled -> {}'.format(e))
+            if self._verbose == True:
+                print('BUY: this transaction will be cancelled -> {}'.format(e))
             return
         # Check the fund has the money to cover this trade
         if abs(trade.ledger_value) > self.available:
-            print('\tnot enough funds')
+            if self._verbose == True:
+                print('\tnot enough funds')
             raise ValueError(
                 'you do not have the funds to make this trade -> this transaction will be cancelled')
         # Give trade an id
@@ -337,7 +345,8 @@ class Fund:
                 pre_avcost=self.cur_holdings.get(ticker, {}).get('cur_price', 0.0)
             )
         except ValueError as e:
-            print('SELL: this transaction will be cancelled -> {}'.format(e))
+            if self._verbose == True:
+                print('SELL: this transaction will be cancelled -> {}'.format(e))
             return
         # Give trade an id
         trade.trade_id = self.ledger.shape[0]
